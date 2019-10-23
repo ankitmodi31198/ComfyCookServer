@@ -63,7 +63,7 @@ exports.insertFood = async (req, res, next) => {
     }
 }
 
-exports.getUserFood = async (req, res, next) => {
+exports.getUserFoods = async (req, res, next) => {
     try {
         const userId = req.params.uid
         const foods = await db.Food.find({
@@ -71,6 +71,45 @@ exports.getUserFood = async (req, res, next) => {
         }).populate('user')
         
         res.json({foods, success: true, msg: 'foods found'})
+    } catch (err) {
+        err.status = 400
+        console.log(err);
+    }
+}
+
+exports.getUserFood = async (req, res, next) => {
+    try {
+        const userId = req.params.uid
+        const foodId = req.params.fid
+
+        const food = await db.Food.findOne({
+            user: userId,
+            _id: foodId
+        }).populate('user').populate('cusine').populate('ingredients.ing')
+
+        res.json({food, success: true, msg: 'food found'})
+    } catch (err) {
+        err.status = 400
+        console.log(err);    
+    }
+}
+
+exports.deleteFood = async (req, res, next) => {
+    try {
+        const {userId, foodId} = req.body
+
+        const user = await db.User.findById(userId)
+
+        if (user) {
+            user.food.pull(foodId)
+            await user.save()
+
+            await db.Food.findByIdAndDelete(foodId)            
+
+            res.json({success: true, msg: 'done'})
+        } else {
+            res.json({success: false, msg: 'failed'})
+        }
     } catch (err) {
         err.status = 400
         console.log(err);
